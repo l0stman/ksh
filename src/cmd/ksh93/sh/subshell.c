@@ -397,18 +397,20 @@ static_fn void subshell_table_unset(Dt_t *root, int fun) {
     Namval_t *np, *nq;
 
     for (np = (Namval_t *)dtfirst(root); np; np = nq) {
+        Shell_t *shp = sh_ptr(np);
         nq = (Namval_t *)dtnext(root, np);
         nvflag_t flag = 0;
 
-        // This code block was restored from last stable release to fix a use after free issue.
-        // https://github.com/att/ast/issues/803
-        if (fun && FETCH_VT(np->nvalue, rp) && FETCH_VT(np->nvalue, rp)->fname &&
-            *FETCH_VT(np->nvalue, rp)->fname == '/') {
+        // Auto-loaded function should not be freed.
+        if (fun && FETCH_VT(np->nvalue, rp) &&
+            FETCH_VT(np->nvalue, rp)->fname &&
+            shp->fpathdict &&
+            nv_search(FETCH_VT(np->nvalue, rp)->fname, shp->fpathdict, 0)) {
             FETCH_VT(np->nvalue, rp)->fdict = NULL;
             flag = NV_NOFREE;
+        } else {
+            _nv_unset(np, NV_RDONLY | NV_TABLE);
         }
-
-        _nv_unset(np, NV_RDONLY | NV_TABLE);
         nv_delete(np, root, flag | NV_FUNCTION);
     }
 }
