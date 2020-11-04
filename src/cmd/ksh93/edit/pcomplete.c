@@ -38,6 +38,7 @@
 #include "shtable.h"
 #include "stk.h"
 #include "variables.h"
+#include "shnodes.h"
 
 #define FILTER_AMP 0x4000
 
@@ -178,69 +179,43 @@ char **ed_pcomplete(struct Complete *comp, const char *line, const char *prefix,
         }
     }
     if (comp->command || comp->fun) {
-        char *cpsave;
-        int csave;
+        int argc;
         if (strcmp(comp->name, " E") == 0) complete = 1;
         if (complete) {
+            Shnode_t *t;
+            Sfio_t *iop;
             _nv_unset(VAR_COMPREPLY, 0);
             STORE_VT(VAR_COMP_POINT->nvalue, i16, index + 1);
             STORE_VT(VAR_COMP_LINE->nvalue, const_cp, line);
+
+            iop = sfnew(NULL, NULL, SF_UNBOUND, -1, SF_STRING|SF_READ|SF_WRITE);
+
             cp = (char *)&line[index] - strlen(prefix);
-            csave = *(cpsave = cp);
-            while (--cp >= line) {
-                if (isspace(*cp)) break;
+            sfwrite(iop, line, index);
+            if (*cp == '\0' && cp > line && isspace(*(cp-1))) {
+                sfputr(iop, "\"\"", '\0');
+            } else {
+                sfputc(iop, '\0');
             }
-            lastword = ++cp;
+
+            sfseek(iop, (Sfoff_t)0, SEEK_SET);
+            t = sh_parse(shp, iop, SH_EOF);
+            av = sh_argbuild(shp, &argc, &t->com, 0);
+            sfclose(iop);
+
+            lastword = av[argc-2];
+            prefix = av[argc-1];
         }
         if (comp->fun) {
             Namarr_t *ap;
             Namval_t *np = VAR_COMPREPLY;
-            int n, spaces = 0;
             if (!complete) errormsg(SH_DICT, ERROR_warn(0), "-F option may not work as you expect");
             _nv_unset(VAR_COMP_WORDS, NV_RDONLY);
-            cp = (char *)line;
-            if (strchr(" \t", *cp)) cp++;
-            n = 1;
-            while (*cp) {
-                c = *cp++;
-                if (strchr(" \t", c)) {
-                    if (spaces++ == 0) n++;
-                } else if (spaces) {
-                    spaces = 0;
-                }
-            }
-            STORE_VT(VAR_COMP_CWORD->nvalue, i16, n - 1);
+            STORE_VT(VAR_COMP_CWORD->nvalue, i16, argc - 1);
+            nv_setvec(VAR_COMP_WORDS, 0, argc, av);
             stkseek(shp->stk, 0);
-            len = (n + 1) * sizeof(char *) + strlen(line) + 1;
-            stkseek(shp->stk, len);
-            av = (char **)stkptr(shp->stk, 0);
-            cp = (char *)&av[n + 1];
-            strcpy(cp, line);
-            spaces = 0;
-            while (*cp) {
-                while (*cp && strchr(" \t", *cp)) {
-                    *cp++ = 0;
-                    spaces++;
-                }
-                if (*cp == 0) {
-                    if (spaces) {
-                        *--cp = ' ';
-                        *av++ = cp;
-                    }
-                    break;
-                }
-                spaces = 0;
-                *av++ = cp;
-                while (*cp && !strchr(" \t", *cp)) cp++;
-            }
-            *av = 0;
-            av = (char **)stkptr(shp->stk, 0);
-            nv_setvec(VAR_COMP_WORDS, 0, n, av);
-            stkseek(shp->stk, 0);
-            *cpsave = 0;
             sfprintf(shp->stk, "%s \"%s\" \"%s\" \"%s\"\n\0", nv_name(comp->fun), comp->name,
                      prefix, lastword);
-            *cpsave = csave;
             sfputc(shp->stk, 0);
             str = stkptr(shp->stk, 0);
             sh_trap(shp, str, 0);
@@ -260,11 +235,9 @@ char **ed_pcomplete(struct Complete *comp, const char *line, const char *prefix,
             if (!complete) errormsg(SH_DICT, ERROR_warn(0), "-C option may not work as you expect");
             stkseek(shp->stk, 0);
             sfsync(tmp);
-            *cpsave = 0;
             sfprintf(shp->stk, "(\"%s\" \"%s\" \"%s\" \"%s\") >&%d\n", comp->command, comp->name,
                      prefix, lastword, sffileno(tmp));
             sfputc(shp->stk, 0);
-            *cpsave = csave;
             str = stkptr(shp->stk, 0);
             sh_trap(shp, str, 0);
             sfseek(tmp, (Sfoff_t)0, SEEK_END);
