@@ -338,8 +338,7 @@ again:
     }
     if (complete) {
         // Reserved space on stack and try again.
-        len = 3;
-        tlen = (c + 1) * sizeof(char *) + len * c + 1024;
+        tlen += (c + 1) * sizeof(char *) + (plen + slen + 1) * c;
         stkseek(shp->stk, tlen);
         complete = 2;
         av = (char **)stkptr(shp->stk, 0);
