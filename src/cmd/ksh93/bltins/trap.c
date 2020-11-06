@@ -177,8 +177,6 @@ int b_trap(int argc, char *argv[], Shbltin_t *context) {
             } else {
                 if (sig >= shp->st.trapmax) shp->st.trapmax = sig + 1;
                 arg = shp->st.trapcom[sig];
-                // Empty trap handler
-                shp->st.trapcom[sig] = strdup("");
                 sh_sigtrap(shp, sig);
                 if (!(shp->sigflag[sig] & SH_SIGOFF)) {
                     char *cp = action;
@@ -189,8 +187,11 @@ int b_trap(int argc, char *argv[], Shbltin_t *context) {
                         stkseek(shp->stk, off);
                     }
                     shp->st.trapcom[sig] = strdup(cp);
+                } else {
+                    // Empty trap handler
+                    shp->st.trapcom[sig] = strdup(Empty);
                 }
-                if (arg && arg != Empty) free(arg);
+                if (arg) free(arg);
                 if (sig == 0 && (!shp->fn_depth || shp->end_fn)) shp->exittrap = 1;
             }
         }
