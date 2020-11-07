@@ -318,7 +318,7 @@ void sh_sigreset(Shell_t *shp, int mode) {
         if (trap) {
             flag = shp->sigflag[sig] & ~(SH_SIGTRAP | SH_SIGSET);
             if (*trap) {
-                if (mode) free(trap);
+                free(trap);
                 shp->st.trapcom[sig] = 0;
             } else if (sig && mode > 1) {
                 if (sig != SIGCHLD) sh_signal(sig, (sh_sigfun_t)(SIG_IGN));
@@ -335,6 +335,7 @@ void sh_sigreset(Shell_t *shp, int mode) {
             shp->st.trap[sig] = 0;
         }
     }
+    if (shp->st.trapcom[0]) free(shp->st.trapcom[0]);
     shp->st.trapcom[0] = 0;
     if (mode) shp->st.trapmax = 0;
     shp->trapnote = 0;
