@@ -72,11 +72,23 @@ static_fn bool path_chkpaths(Shell_t *, Pathcomp_t *, Pathcomp_t *, Pathcomp_t *
 static_fn void path_checkdup(Shell_t *shp, Pathcomp_t *);
 static_fn Pathcomp_t *defpath_init(Shell_t *shp);
 
-static const char *std_path = NULL;
+static_fn const char *std_path(void) {
+    static const char *path = NULL;
+    if (!path) {
+        path = cs_path();
+        if (path) {
+            // Value returned by cs_path() is short lived, duplicate the string.
+            // https://github.com/att/ast/issues/959
+            path = strdup(path);
+        } else {
+            path = e_defpath;
+        }
+    }
+    return path;
+}
 
-static_fn bool onstdpath(Shell_t *shp, const char *name) {
-    if (!std_path) defpath_init(shp);
-    const char *cp = std_path, *sp;
+static_fn bool onstdpath(const char *name) {
+    const char *cp = std_path(), *sp;
     if (cp) {
         while (*cp) {
             for (sp = name; *sp && (*cp == *sp); sp++, cp++) {
@@ -375,7 +387,7 @@ static_fn void path_checkdup(Shell_t *shp, Pathcomp_t *pp) {
     pp->mtime = statb.st_mtime;
     pp->ino = statb.st_ino;
     pp->dev = statb.st_dev;
-    if (*name == '/' && onstdpath(shp, name)) flag = PATH_STD_DIR;
+    if (*name == '/' && onstdpath(name)) flag = PATH_STD_DIR;
     first = (pp->flags & PATH_CDPATH) ? shp->cdpathlist : path_get(shp, "");
     for (oldpp = first; oldpp && oldpp != pp; oldpp = oldpp->next) {
         if (pp->ino == oldpp->ino && pp->dev == oldpp->dev && pp->mtime == oldpp->mtime) {
@@ -429,17 +441,7 @@ Pathcomp_t *path_nextcomp(Shell_t *shp, Pathcomp_t *pp, const char *name, Pathco
 }
 
 static_fn Pathcomp_t *defpath_init(Shell_t *shp) {
-    if (!std_path) {
-        std_path = cs_path();
-        if (std_path) {
-            // Value returned by cs_path() is short lived, duplicate the string.
-            // https://github.com/att/ast/issues/959
-            std_path = strdup(std_path);
-        } else {
-            std_path = e_defpath;
-        }
-    }
-    return path_addpath(shp, NULL, std_path, PATH_PATH);
+    return path_addpath(shp, NULL, std_path(), PATH_PATH);
 }
 
 static_fn void path_init(Shell_t *shp) {
