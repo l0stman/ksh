@@ -2999,6 +2999,7 @@ int regcomp(regex_t *p, const char *pattern, regflags_t flags) {
         fold = calloc(1, UCHAR_MAX + 1);
         if (!fold) return regfatal(disc, REG_ESPACE, pattern);
         for (i = 0; i <= UCHAR_MAX; i++) fold[i] = toupper(i);
+        if (lc_ctype_data) free(lc_ctype_data);
         lc_ctype_data = fold;
         lc_ctype_serial = ast.locale.serial;
     }
