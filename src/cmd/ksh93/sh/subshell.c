@@ -227,6 +227,7 @@ bool nv_subsaved(Namval_t *np, bool table) {
                         sp->svar = lp->next;
                     }
                     free(np);
+                    free(lp->np_node);
                     free(lp);
                 }
                 return true;
