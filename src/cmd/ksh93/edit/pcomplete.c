@@ -593,7 +593,7 @@ int b_complete(int argc, char *argv[], Shbltin_t *context) {
                 }
             } else {
                 comp.name = name;
-                if (!delete_and_add(argv[0], delete ? 0 : &comp)) r = 1;
+                if (!delete_and_add(name, delete ? 0 : &comp)) r = 1;
             }
         }
     } else {
