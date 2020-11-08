@@ -568,7 +568,7 @@ static_fn void funload(Shell_t *shp, int fno, const char *name) {
         do {
             if ((np = dtsearch(funtree, rp->np)) && is_afunction(np)) {
                 if (FETCH_VT(np->nvalue, rp)) FETCH_VT(np->nvalue, rp)->fdict = NULL;
-                nv_delete(np, funtree, NV_NOFREE);
+                nv_delete(np, funtree, np == rp->np ? NV_NOFREE: 0);
             }
             dtinsert(funtree, rp->np);
             rp->fdict = funtree;
