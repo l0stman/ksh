@@ -402,7 +402,7 @@ void sh_chktrap(Shell_t *shp) {
         if ((shp->sigflag[sig] & SH_SIGTRAP) || (shp->siginfo && shp->siginfo[sig])) {
             shp->sigflag[sig] &= ~SH_SIGTRAP;
             if (sig == SIGCHLD) {
-                job_chldtrap(shp, shp->st.trapcom[SIGCHLD], 1);
+                job_chldtrap(shp, 1);
                 continue;
             }
             trap = shp->st.trapcom[sig];

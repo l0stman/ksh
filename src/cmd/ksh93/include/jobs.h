@@ -151,7 +151,7 @@ extern bool job_wait(pid_t);
 extern int job_post(Shell_t *, pid_t, pid_t);
 extern void *job_subsave(void);
 extern void job_subrestore(Shell_t *, void *);
-extern void job_chldtrap(Shell_t *, const char *, int);
+extern void job_chldtrap(Shell_t *, int);
 #ifdef JOBS
 extern void job_init(Shell_t *, int);
 extern int job_close(Shell_t *);

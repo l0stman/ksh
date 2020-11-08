@@ -206,7 +206,7 @@ static_fn void setsiginfo(Shell_t *shp, siginfo_t *info, struct process *pw) {
     sh_setsiginfo(info);
 }
 
-void job_chldtrap(Shell_t *shp, const char *trap, int lock) {
+void job_chldtrap(Shell_t *shp, int lock) {
     UNUSED(lock);
     struct process *pw, *pwnext;
     pid_t bckpid;
@@ -225,7 +225,9 @@ void job_chldtrap(Shell_t *shp, const char *trap, int lock) {
         shp->bckpid = pw->p_pid;
         shp->savexit = pw->p_exit;
         if (pw->p_flag & P_SIGNALLED) shp->savexit |= SH_EXITSIG;
-        sh_trap(shp, trap, 0);
+        // We need to reread the handler each time since sh_trap()
+        // might unset or change it.
+        sh_trap(shp, shp->st.trapcom[SIGCHLD], 0);
         if (!sorc) {
             job.numbjob--;
             if (pw->p_pid == bckpid) job_unpost(shp, pw, 0);
@@ -486,7 +488,7 @@ bool job_reap(int sig) {
     if (!sig && (shp->trapnote & SH_SIGTRAP)) {
         int c = job.in_critical;
         job.in_critical = 0;
-        job_chldtrap(shp, shp->st.trapcom[SIGCHLD], 1);
+        job_chldtrap(shp, 1);
         job.in_critical = c;
     }
     return nochild;
