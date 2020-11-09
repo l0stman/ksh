@@ -64,8 +64,8 @@ static const char *Action_eval[] = {
     "x'builtin'",
     "x(IFS=:;for i in $PATH;do cd \"$i\";for f in *;do [[ -x $f && ! -d $f ]] && print -r -- "
     "\"$f\";done;cd ~-;done)",
-    "xfor _ in *; do [[ ! -d \"$_\" ]] && print -r -- \"$_\";done",
-    "xfor _ in *; do [[ -d \"$_\" ]] && print -r -- \"$_\";done",
+    "xfor _ in ?(.)*; do [[ ! -d \"$_\" ]] && print -r -- \"$_\";done",
+    "xfor _ in ?(.)*; do [[ -d \"$_\" ]] && print -r -- \"$_\";done",
     "x'builtin' -n",
     "x'builtin'",
     "xtypeset +x",
